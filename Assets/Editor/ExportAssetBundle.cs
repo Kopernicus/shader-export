@@ -27,11 +27,14 @@ public class ExportSelected {
         for (int i = 0; i < 3; i++)
         {
             string dest = Path.Combine(destination, extensions[i]);
+            
+            // because for some reason it fails if the desired destination folder doesn't exist.
             if (!Directory.Exists(dest))
             {
                 Directory.CreateDirectory(dest);
             }
-
+            
+            // and here the magic happens: build an asset bundle, once per OS.
             BuildPipeline.BuildAssetBundles(dest, BuildAssetBundleOptions.None, targets[i]);
         }
 
