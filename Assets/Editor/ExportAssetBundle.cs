@@ -6,6 +6,8 @@ public class ExportSelected {
 
     private const string ext = "unity3d";
 
+    static readonly string[] destinations = { "Windows", "Linux", "MacOSX" };
+
     [MenuItem("Export/Export Selected Assets As Bundle")]
     private static void BuildBundle()
     {
@@ -13,29 +15,31 @@ public class ExportSelected {
         string fileName;
         Split(ref destination, out fileName);
 
-        // as of this version of unity, there is no need for 32 bit exporting.
+        // As of this version of unity, there is no need for 32 bit exporting.
         BuildTarget[] targets = { BuildTarget.StandaloneWindows64, BuildTarget.StandaloneLinux64, BuildTarget.StandaloneOSXIntel64 };
-        string[] extensions = { "Windows", "Linux", "Mac" };
+        string[] extensions = { fileName + "-windows", fileName + "-linux", fileName + "-macosx" };
 
-        // get selected assets
+        // Get selected assets
         var assets = Selection.GetFiltered<Object>(SelectionMode.DeepAssets);
-        
-        // build the plan.
-        AssetBundleBuild[] builds = { BuildPlan(assets, fileName) };
 
-        // build all bundles
+        // Build the plan.
+        AssetBundleBuild[] builds = { BuildPlan(assets) };
+        
+        // Build all bundles
         for (int i = 0; i < 3; i++)
         {
-            string dest = Path.Combine(destination, extensions[i]);
-            
-            // because for some reason it fails if the desired destination folder doesn't exist.
+            // Assign the proper bundle name
+            builds[0].assetBundleName = extensions[i];
+
+            // Create finalized filepath and create folders if necessary (because the operation fails otherwise)
+            string dest = Path.Combine(destination, destinations[i]);
             if (!Directory.Exists(dest))
             {
                 Directory.CreateDirectory(dest);
             }
-            
-            // and here the magic happens: build an asset bundle, once per OS.
-            BuildPipeline.BuildAssetBundles(dest, BuildAssetBundleOptions.None, targets[i]);
+
+            // Build bundle for this platform.
+            BuildPipeline.BuildAssetBundles(dest, builds, BuildAssetBundleOptions.None, targets[i]);
         }
 
         AssetDatabase.Refresh();
@@ -56,17 +60,15 @@ public class ExportSelected {
     }
 
     /// <summary>
-    /// Generates an AssetBundleBuild plan from the given array of assets and the provided bundle name.
+    /// Generates an AssetBundleBuild plan from the given array of assets.
     /// </summary>
     /// <param name="assets">The assets to be included in this bundle</param>
-    /// <param name="bundleName">The name the bundle ought to have.</param>
     /// <returns></returns>
-    public static AssetBundleBuild BuildPlan(Object[] assets, string bundleName)
+    public static AssetBundleBuild BuildPlan(Object[] assets)
     {
         AssetBundleBuild build = new AssetBundleBuild()
         {
             addressableNames = new string[assets.Length],
-            assetBundleName = bundleName,
             assetNames = new string[assets.Length],
             assetBundleVariant = ext
         };
